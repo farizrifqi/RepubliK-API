@@ -48,6 +48,24 @@ const cleanUrl = (url) => {
 }
 class RepubliKAPI {
   constructor(opts) {
+    this.setAuthToken = (authToken) => {
+      this.authToken = authToken
+    }
+    this.setUserId = (userId) => {
+      this.userId = userId
+    }
+    this.setRefreshToken = (refreshToken) => {
+      this.refreshToken = refreshToken
+    }
+    this.getAuthToken = () => {
+      return this.authToken
+    }
+    this.getUserId = () => {
+      return this.userId
+    }
+    this.getRefreshToken = () => {
+      return this.refreshToken
+    }
     this._getHeaders = () => ({
       Accept: "*/*",
       "Accept-Language": "en-US",

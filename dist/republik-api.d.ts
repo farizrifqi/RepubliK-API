@@ -36,6 +36,12 @@ export declare class RepubliKAPI {
   userId: string
   refreshToken: string
   constructor(opts: RepubliKAPI.Auth)
+  setAuthToken: (authToken: string) => void
+  setUserId: (userId: string) => void
+  setRefreshToken: (refreshToken: string) => void
+  getAuthToken: () => string
+  getUserId: () => string
+  getRefreshToken: () => string
   _getHeaders: () => {
     Accept: string
     "Accept-Language": string

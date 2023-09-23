@@ -61,6 +61,30 @@ export class RepubliKAPI {
     this.refreshToken = opts.refreshToken || ""
   }
 
+  setAuthToken = (authToken: string) => {
+    this.authToken = authToken
+  }
+
+  setUserId = (userId: string) => {
+    this.userId = userId
+  }
+
+  setRefreshToken = (refreshToken: string) => {
+    this.refreshToken = refreshToken
+  }
+
+  getAuthToken = () => {
+    return this.authToken
+  }
+
+  getUserId = () => {
+    return this.userId
+  }
+
+  getRefreshToken = () => {
+    return this.refreshToken
+  }
+
   _getHeaders = () => ({
     Accept: "*/*",
     "Accept-Language": "en-US",
