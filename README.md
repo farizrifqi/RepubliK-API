@@ -1,4 +1,4 @@
-# Unofficial-RepublikGG-API
+# RepublikGG-API
 **Disclaimer:** This project provides access to an unofficial API for informational and educational purposes only. 
 
 ## Quickstart

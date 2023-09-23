@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "lib": [
+      "es2017",
+      "es7",
+      "es6",
+      "dom"
+    ],
+    "module": "CommonJS",
+    "outDir": "dist",
+    "removeComments": true,
+    "rootDir": "./src/republikgg",
+    "declaration": true,
+    "target": "es6"
+  },
+  "include": [
+    "./src/republikgg/"
+  ],
+  "exclude": [
+    "./src/example"
+  ]
+}
