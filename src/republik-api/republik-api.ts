@@ -189,7 +189,7 @@ export class RepubliKAPI {
     Self = {
         getProfile: async (): Promise<UserData | ErrorResponse | undefined> => (await this.getProfile(this.userId)),
         getVotes: async (): Promise<any> => (await this._getVotes()),
-        getFolowers: async (opt?: RelationQueryOptions): Promise<Relation | ErrorResponse | undefined> => (await this.getFollowers(this.userId, opt)),
+        getFollowers: async (opt?: RelationQueryOptions): Promise<Relation | ErrorResponse | undefined> => (await this.getFollowers(this.userId, opt)),
         getFollowing: async (opt?: RelationQueryOptions): Promise<Relation | ErrorResponse | undefined> => (await this.getFollowing(this.userId, opt)),
         getPosts: async (opt?: GetPostOption): Promise<PostsQuery | undefined> => (await this.getPosts(this.userId, opt)),
         getTimeline: async (opt?: GetPostOption): Promise<PostsQuery | undefined> => {
