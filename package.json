@@ -1,6 +1,6 @@
 {
   "name": "republikgg-api",
-  "version": "1.0.0-a",
+  "version": "1.0.1",
   "description": "Unofficial Republik.gg API",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,6 +12,9 @@
     "type": "git",
     "url": "git+https://github.com/farizrifqi/RepublikGG-API.git"
   },
+  "keywords": [
+    "api"
+  ],
   "bugs": {
     "url": "https://github.com/farizrifqi/RepublikGG-API/issues"
   },
