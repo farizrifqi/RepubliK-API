@@ -1,28 +1,84 @@
-export type PostsQuery = {
+export interface RelationQueryOptions {
+    userId?: string,
+    q?: string,
+    lastKey?: string,
+    startAt?: string
+}
+
+export interface PostsQuery {
     duration?: string,
     next?: string,
     results: Post[]
 }
-export type PostQuery = {
+
+export interface PostQuery {
     duration?: string,
     next?: string,
     activity: Post,
     results: any
 }
 
-export type ReactionCounts = {
+export interface Video {
+    id: string,
+    preview: string,
+    source: string,
+    thumbnailSmall: string
+}
+
+export interface Participant {
+    user: UserData,
+    video: Video,
+    description: String,
+    id: string,
+    activity_id: string,
+    commentsCount: number,
+    votesCount: number
+}
+
+export interface StartCondition {
+    contest: string,
+    createdAt: number,
+    id: string
+}
+
+export interface Creator {
+    user: UserData,
+    video: Video
+}
+
+export interface ChallangeQueryResponse {
+    last_key: string,
+    results: Challenge,
+    startAtCondition: StartCondition
+}
+
+export interface Challenge {
+    activity_id: string,
+    category: string,
+    commentsCount: number,
+    creator: Participant,
+    description: String,
+    endDate: number,
+    hideVotesCount: boolean,
+    id: string,
+    name: string,
+    participants: Participant[]
+    status: string,
+}
+
+export interface ReactionCounts {
     like: number
 }
 
-export type LatestReaction = {
+export interface LatestReaction {
     like: any
 }
 
-export type LatestReactionExtra = {
+export interface LatestReactionExtra {
     like: Activity[]
 }
 
-export type Activity = {
+export interface Activity {
     activity_id: string,
     children_counts: any,
     created_at: string,
@@ -37,7 +93,7 @@ export type Activity = {
     user_id: string
 }
 
-export type PostData = {
+export interface PostData {
     avatar: string,
     caption: string,
     created_at: string,
@@ -46,7 +102,7 @@ export type PostData = {
     imageAspectRatio: number,
     imageUrl: string,
     isDiscoverable: boolean,
-    mediaType: string,
+    mediainterface: string,
     mentions: any[],
     replies: any[],
     tags: string,
@@ -55,7 +111,7 @@ export type PostData = {
     username: string
 }
 
-export type PostObject = {
+export interface PostObject {
     collection: string,
     created_at: string,
     foreign_id: string,
@@ -64,7 +120,7 @@ export type PostObject = {
     data: PostData
 }
 
-export type Post = {
+export interface Post {
     actor: User,
     foreign_id: string,
     id: string,
@@ -80,14 +136,14 @@ export type Post = {
     object: PostObject
 }
 
-export type User = {
+export interface User {
     created_at: string,
     data: UserData,
     id: string,
     updated_at: string
 }
 
-export type UserData = {
+export interface UserData {
     ageConsent?: boolean,
     ageConsentTimestamp?: string,
     badge?: string,
@@ -104,26 +160,27 @@ export type UserData = {
     isEmailValidated?: boolean,
     isPhoneValidated?: boolean,
     refUsername?: string,
-    type?: string,
+    interface?: string,
     updatedAt?: string,
     username?: string,
     followStatus?: string,
     xp?: number,
     multiplier?: string,
+    bio?: string,
 }
 
-export type Relation = {
+export interface Relation {
     users: User[],
     lastKey: string,
     startAt?: string
 }
 
-export type Token = {
+export interface Token {
     getStreamToken: string,
     oneSignalUserIdToken: string,
 }
 
-export type StreamConfig = {
+export interface StreamConfig {
     location: string,
     limit: number,
     withOwnReactions?: boolean,
