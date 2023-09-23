@@ -180,7 +180,7 @@ export interface Token {
     oneSignalUserIdToken: string,
 }
 
-export interface StreamConfig {
+export interface GetPostOption {
     location: string,
     limit: number,
     withOwnReactions?: boolean,

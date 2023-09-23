@@ -5,7 +5,7 @@ import {
     PostsQuery,
     Relation,
     RelationQueryOptions,
-    StreamConfig,
+    GetPostOption,
     Token,
     User,
     UserData
@@ -28,11 +28,11 @@ export interface getFollowing<T extends any> {
 }
 
 export interface getPosts<T extends any> {
-    (userId: string, options?: StreamConfig): Promise<T>;
+    (userId: string, options?: GetPostOption): Promise<T>;
 }
 
 export interface getPost<T extends any> {
-    (activityId: string, options?: StreamConfig): Promise<T>;
+    (activityId: string, options?: GetPostOption): Promise<T>;
 }
 
 export interface getProfile<T extends any> {
@@ -191,8 +191,8 @@ export class RepublikGGAPI {
         getVotes: async (): Promise<any> => (await this._getVotes()),
         getFolowers: async (opt?: RelationQueryOptions): Promise<Relation | ErrorResponse | undefined> => (await this.getFollowers(this.userId, opt)),
         getFollowing: async (opt?: RelationQueryOptions): Promise<Relation | ErrorResponse | undefined> => (await this.getFollowing(this.userId, opt)),
-        getPosts: async (opt?: StreamConfig): Promise<PostsQuery | undefined> => (await this.getPosts(this.userId, opt)),
-        getTimeline: async (opt?: StreamConfig): Promise<PostsQuery | undefined> => {
+        getPosts: async (opt?: GetPostOption): Promise<PostsQuery | undefined> => (await this.getPosts(this.userId, opt)),
+        getTimeline: async (opt?: GetPostOption): Promise<PostsQuery | undefined> => {
             let data: PostsQuery | undefined = undefined;
             let streamToken: string | undefined = undefined;
 
