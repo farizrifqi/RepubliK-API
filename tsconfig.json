@@ -1,12 +1,7 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
-    "lib": [
-      "es2017",
-      "es7",
-      "es6",
-      "dom"
-    ],
+    "lib": ["es2017", "es7", "es6", "dom"],
     "module": "CommonJS",
     "outDir": "dist",
     "removeComments": true,
@@ -14,10 +9,6 @@
     "declaration": true,
     "target": "es6"
   },
-  "include": [
-    "./src/republik-api/"
-  ],
-  "exclude": [
-    "./src/example"
-  ]
+  "include": ["./src/republik-api/"],
+  "exclude": ["./src/example"]
 }
