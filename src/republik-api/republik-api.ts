@@ -327,12 +327,12 @@ export class RepubliKAPI {
     }
 
     getFollowers: getFollowers<Relation | ErrorResponse | undefined> = async (userId, opt) => {
-        const response = await this._getRelations(userId, true, opt.q, opt.lastKey, opt.startAt);
+        const response = await this._getRelations(userId, true, opt?.q, opt?.lastKey, opt?.startAt);
         return response;
     }
 
     getFollowing: getFollowing<Relation | ErrorResponse | undefined> = async (userId, opt) => {
-        const response = await this._getRelations(userId, false, opt.q, opt.lastKey, opt.startAt);
+        const response = await this._getRelations(userId, true, opt?.q, opt?.lastKey, opt?.startAt);
         return response;
     }
 
