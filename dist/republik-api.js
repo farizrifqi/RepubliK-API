@@ -259,11 +259,11 @@ class RepubliKAPI {
             return data;
         });
         this.getFollowers = (userId, opt) => __awaiter(this, void 0, void 0, function* () {
-            const response = yield this._getRelations(userId, true, opt.q, opt.lastKey, opt.startAt);
+            const response = yield this._getRelations(userId, true, opt === null || opt === void 0 ? void 0 : opt.q, opt === null || opt === void 0 ? void 0 : opt.lastKey, opt === null || opt === void 0 ? void 0 : opt.startAt);
             return response;
         });
         this.getFollowing = (userId, opt) => __awaiter(this, void 0, void 0, function* () {
-            const response = yield this._getRelations(userId, false, opt.q, opt.lastKey, opt.startAt);
+            const response = yield this._getRelations(userId, true, opt === null || opt === void 0 ? void 0 : opt.q, opt === null || opt === void 0 ? void 0 : opt.lastKey, opt === null || opt === void 0 ? void 0 : opt.startAt);
             return response;
         });
         this.getPosts = (userId, options) => __awaiter(this, void 0, void 0, function* () {
