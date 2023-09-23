@@ -1,7 +1,7 @@
 {
-  "name": "republikgg-api",
-  "version": "1.0.1",
-  "description": "Unofficial Republik.gg API",
+  "name": "republik-api",
+  "version": "1.0.0",
+  "description": "Unofficial RepubliK.gg API",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/farizrifqi/RepublikGG-API.git"
+    "url": "git+https://github.com/farizrifqi/RepubliK-API.git"
   },
   "keywords": [
     "api"
   ],
   "bugs": {
-    "url": "https://github.com/farizrifqi/RepublikGG-API/issues"
+    "url": "https://github.com/farizrifqi/RepubliK-API/issues"
   },
-  "homepage": "https://github.com/farizrifqi/RepublikGG-API#readme",
+  "homepage": "https://github.com/farizrifqi/RepubliK-API#readme",
   "license": "ISC",
   "author": "Fariz Rifqi",
   "dependencies": {

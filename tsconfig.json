@@ -10,12 +10,12 @@
     "module": "CommonJS",
     "outDir": "dist",
     "removeComments": true,
-    "rootDir": "./src/republikgg",
+    "rootDir": "./src/republik-api/",
     "declaration": true,
     "target": "es6"
   },
   "include": [
-    "./src/republikgg/"
+    "./src/republik-api/"
   ],
   "exclude": [
     "./src/example"

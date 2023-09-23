@@ -1,4 +1,4 @@
-# RepublikGG-API
+# RepubliK-API
 **Disclaimer:** This project provides access to an unofficial API for informational and educational purposes only. 
 
 ## Quickstart
@@ -7,20 +7,20 @@
 
 #### Using NPM
 ```
-npm install republikgg-api
+npm install republik-api
 ```
 
 #### Using YARN
 ```
-yarn add republikgg-api
+yarn add republik-api
 ```
 
 ### Quick example of usage
 
 ```ts
-import { RepublikGGAPI } from 'republikgg-api';
+import { RepubliKAPI } from 'republik-api';
 
-const republikgg = new RepublikGGAPI({
+const republikgg = new RepubliKAPI({
     authToken: "ACCESS_TOKEN",
     userId: "USER_ID"
 });

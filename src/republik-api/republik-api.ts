@@ -9,7 +9,7 @@ import {
     Token,
     User,
     UserData
-} from "./republikgg-types";
+} from "./republik-types";
 
 const cleanUrl = (url: string): string => {
     url = url.split("?")[0]
@@ -46,7 +46,7 @@ export interface _getRelations<T extends any> {
     (userId: string, followers: boolean, q: string, lastKey: string, startAt: string): Promise<T>;
 }
 
-export declare namespace RepublikGGAPI {
+export declare namespace RepubliKAPI {
     type Auth = {
         userId: string,
         authToken: string
@@ -58,12 +58,12 @@ export type ErrorResponse = {
     message: string;
 }
 
-export class RepublikGGAPI {
+export class RepubliKAPI {
 
     authToken: string;
     userId: string;
 
-    constructor(opts: RepublikGGAPI.Auth) {
+    constructor(opts: RepubliKAPI.Auth) {
         this.authToken = opts.authToken;
         this.userId = opts.userId;
     }
@@ -428,4 +428,4 @@ export class RepublikGGAPI {
 }
 
 
-export default RepublikGGAPI;
+export default RepubliKAPI;

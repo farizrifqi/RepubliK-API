@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RepublikGGAPI = void 0;
+exports.RepubliKAPI = void 0;
 const axios_1 = __importDefault(require("axios"));
 const constants_1 = require("./constants");
 const cleanUrl = (url) => {
@@ -23,7 +23,7 @@ const cleanUrl = (url) => {
         return cleanUrl(url.substring(0, url.length - 1));
     return url;
 };
-class RepublikGGAPI {
+class RepubliKAPI {
     constructor(opts) {
         this._getHeaders = () => ({
             "Accept": "*/*",
@@ -319,5 +319,5 @@ class RepublikGGAPI {
         this.userId = opts.userId;
     }
 }
-exports.RepublikGGAPI = RepublikGGAPI;
-exports.default = RepublikGGAPI;
+exports.RepubliKAPI = RepubliKAPI;
+exports.default = RepubliKAPI;

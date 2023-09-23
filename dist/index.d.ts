@@ -1,1 +1,1 @@
-export * from './republikgg';
+export * from './republik-api';

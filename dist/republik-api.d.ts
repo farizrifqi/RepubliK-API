@@ -1,4 +1,4 @@
-import { PostQuery, PostsQuery, Relation, RelationQueryOptions, GetPostOption, Token, UserData } from "./republikgg-types";
+import { PostQuery, PostsQuery, Relation, RelationQueryOptions, GetPostOption, Token, UserData } from "./republik-types";
 export interface getFollowers<T extends any> {
     (userId: string, opt?: RelationQueryOptions): Promise<T>;
 }
@@ -20,7 +20,7 @@ export interface getAccount<T extends any> {
 export interface _getRelations<T extends any> {
     (userId: string, followers: boolean, q: string, lastKey: string, startAt: string): Promise<T>;
 }
-export declare namespace RepublikGGAPI {
+export declare namespace RepubliKAPI {
     type Auth = {
         userId: string;
         authToken: string;
@@ -30,10 +30,10 @@ export type ErrorResponse = {
     error: true;
     message: string;
 };
-export declare class RepublikGGAPI {
+export declare class RepubliKAPI {
     authToken: string;
     userId: string;
-    constructor(opts: RepublikGGAPI.Auth);
+    constructor(opts: RepubliKAPI.Auth);
     _getHeaders: () => {
         Accept: string;
         "Accept-Language": string;
@@ -82,4 +82,4 @@ export declare class RepublikGGAPI {
     getPosts: getPosts<PostsQuery | undefined>;
     getPost: getPost<PostQuery | undefined>;
 }
-export default RepublikGGAPI;
+export default RepubliKAPI;
