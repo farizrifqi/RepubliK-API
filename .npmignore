@@ -1,3 +1,4 @@
 src/
 .prettierrc
 .prettierignore
+tsconfig.json

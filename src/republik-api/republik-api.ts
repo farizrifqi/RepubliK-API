@@ -220,7 +220,10 @@ export class RepubliKAPI {
     if (fileSource.includes(".jpg")) return "jpg"
     if (fileSource.includes(".jpeg")) return "jpeg"
     if (fileSource.includes(".png")) return "png"
-    return undefined
+    if (this.verbose) {
+      console.log(`Unknown file extension. Override to set as JPG. Currently supports JPG, JPEG, PNG`)
+    }
+    return "jpg"
   }
 
   private _isMIMEUploadable = (mimeType: string) => mimeType.includes("image") || mimeType.includes("video")
@@ -229,12 +232,6 @@ export class RepubliKAPI {
     let mimeType: string
     let mediaData: any
     let fileExtension = this._getFileExtension(fileSource)
-    if (!fileExtension) {
-      if (this.verbose) {
-        console.log(`Unknown file extension. Currently supports JPG, JPEG, PNG`)
-      }
-      return undefined
-    }
     const fileLocation = fileSource.toLowerCase().includes("http") ? "url" : "local"
 
     if (fileLocation == "url") {

@@ -158,19 +158,16 @@ class RepubliKAPI {
                 return "jpeg";
             if (fileSource.includes(".png"))
                 return "png";
-            return undefined;
+            if (this.verbose) {
+                console.log(`Unknown file extension. Override to set as JPG. Currently supports JPG, JPEG, PNG`);
+            }
+            return "jpg";
         };
         this._isMIMEUploadable = (mimeType) => mimeType.includes("image") || mimeType.includes("video");
         this._prepareMedia = (fileSource) => __awaiter(this, void 0, void 0, function* () {
             let mimeType;
             let mediaData;
             let fileExtension = this._getFileExtension(fileSource);
-            if (!fileExtension) {
-                if (this.verbose) {
-                    console.log(`Unknown file extension. Currently supports JPG, JPEG, PNG`);
-                }
-                return undefined;
-            }
             const fileLocation = fileSource.toLowerCase().includes("http") ? "url" : "local";
             if (fileLocation == "url") {
                 const getImage = yield this._getFileFromURL(fileSource);
