@@ -622,7 +622,7 @@ export class RepubliKAPI {
 
         const response = await axios.post(
           `${BASE_API_URL}/production/posts`,
-          { caption, mentions: [], media: preparedMedia.map((media) => ({ type: media.commonType })) },
+          { text: caption, mentions: [], media: preparedMedia.map((media) => ({ type: media.commonType })) },
           {
             headers: {
               Authorization: `Bearer ${this.authToken}`,

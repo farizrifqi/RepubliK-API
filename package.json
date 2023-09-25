@@ -1,6 +1,6 @@
 {
   "name": "republik-api",
-  "version": "1.0.2-a",
+  "version": "1.0.2-b",
   "description": "Unofficial RepubliK.gg API",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
