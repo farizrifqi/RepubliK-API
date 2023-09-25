@@ -18,7 +18,7 @@ npm install republik-api
 yarn add republik-api
 ```
 
-### Quick example of usage
+## Quick example of usage
 
 ```ts
 import { RepubliKAPI } from "republik-api"
@@ -41,29 +41,50 @@ republikgg.getPosts("USER_ID", getPostsOpt)
 republikgg.getProfile("USER_ID")
 ```
 
-#### Send post, like, and post comments example
+### Post
 
 ```ts
-republikgg.Self.follow("USER_ID")
-republikgg.Self.like("ACTIVITY_ID")
-republikgg.Self.comment("ACTIVITY_ID", "TEXT")
+republikgg.Self.post("CAPTION", ["MEDIA_URL", "MEDIA_FILEPATH"]) // Maximum 3
+republikgg.Self.delete("POST_ID")
 ```
 
-#### Update profile
+### Relationship
+
+```ts
+republikgg.Self.follow("USER_ID") // follow, unfollow
+republikgg.Self.block("USER_ID") // block, unblock
+```
+
+### Reaction
+
+**Note**: postId and activityId kind a same thing.
+
+```ts
+republikgg.Self.like("ACTIVITY_ID") // like, dislike
+republikgg.Self.comment("ACTIVITY_ID", "TEXT") // comment, uncomment
+```
+
+### Update profile
 
 ```ts
 republikgg.Self.updateProfile.name("DISPLAY NAME")
 republikgg.Self.updateProfile.bio("BIO")
 republikgg.Self.updateProfile.email("EXAMPLE@MAIL.COM")
+
+// Photo
+republikgg.Self.updateProfile.photo("FILE_PATH") // from local file
+// or
+republikgg.Self.updateProfile.photo("URL") // from url
 ```
 
-#### Refreshing Access Token
+### Refreshing Access Token
 
 ```ts
 import { RepubliKAPI } from "republik-api"
 
 const republikgg = new RepubliKAPI({
   authToken: "ACCESS_TOKEN",
+  userId: "USER_ID",
   refreshToken: "REFRESH_TOKEN"
 })
 

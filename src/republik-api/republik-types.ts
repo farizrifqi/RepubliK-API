@@ -1,3 +1,20 @@
+enum FollowStatus {
+  "FOLLOWING",
+  "FOLLOW_BACK",
+  "FRIENDS",
+  "BLOCKING",
+  "BLOCKED",
+  "ERROR",
+  "NOT_FOLLOWING",
+  "LOADING",
+  "NONE"
+}
+
+enum ReactionType {
+  "like",
+  "COMMENT"
+}
+
 export interface RelationQueryOptions {
   userId?: string
   q?: string
@@ -71,7 +88,8 @@ export interface ReactionCounts {
 }
 
 export interface LatestReaction {
-  like: any
+  like: Activity[]
+  COMMENT: Activity[]
 }
 
 export interface LatestReactionExtra {
@@ -84,7 +102,7 @@ export interface Activity {
   created_at: string
   data: any
   id: string
-  kind: string
+  kind: ReactionType
   latest_children: any
   parent: string
   target_feeds: string[]
@@ -142,6 +160,11 @@ export interface User {
   id: string
   updated_at: string
 }
+export interface RelationshipResponse {
+  followedProfileId: string
+  followingProfileId: string
+  followStatus: FollowStatus
+}
 
 export interface UserData {
   ageConsent?: boolean
@@ -163,7 +186,7 @@ export interface UserData {
   interface?: string
   updatedAt?: string
   username?: string
-  followStatus?: string
+  followStatus?: FollowStatus
   xp?: number
   multiplier?: string
   bio?: string

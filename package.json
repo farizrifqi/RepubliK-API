@@ -1,6 +1,6 @@
 {
   "name": "republik-api",
-  "version": "1.0.1-b",
+  "version": "1.0.2",
   "description": "Unofficial RepubliK.gg API",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -23,10 +23,13 @@
   "license": "ISC",
   "author": "Fariz Rifqi",
   "dependencies": {
-    "axios": "^1.5.0"
+    "axios": "^1.5.0",
+    "mime": "^3.0.0"
   },
   "devDependencies": {
+    "@types/mime": "^3.0.1",
     "@types/node": "^20.6.3",
+    "fs": "^0.0.1-security",
     "prettier": "3.0.3"
   }
 }

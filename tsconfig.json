@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
-    "lib": ["es2017", "es7", "es6", "dom"],
+    "lib": ["es2021", "es7", "es6", "dom"],
     "module": "CommonJS",
     "outDir": "dist",
     "removeComments": true,
