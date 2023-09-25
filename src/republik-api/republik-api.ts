@@ -824,6 +824,22 @@ export class RepubliKAPI {
       return err?.response?.data
     }
   }
+
+  getRandomUser = async (limit: number | string = "10") => {
+    let data: UserData | ErrorResponse | undefined = undefined
+    try {
+      const response = await axios.get(`${BASE_API_URL}/production/profile?limit=${limit}`, {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          ...this._getHeaders()
+        }
+      })
+      data = response?.data
+    } catch (err: any) {
+      data = err?.response?.data
+    }
+    return data
+  }
 }
 
 export default RepubliKAPI
