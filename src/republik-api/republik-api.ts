@@ -1,8 +1,20 @@
 import axios, { RawAxiosRequestHeaders } from "axios"
 import { API_KEY, BASE_API_URL, CLIENT_ID, SERVICE_PROVIDER_URl, STREAM_API_URL } from "./constants"
-import { PostQuery, PostsQuery, Relation, RelationQueryOptions, GetPostOption, Token, User, UserData, RelationshipResponse } from "./republik-types"
+import {
+  PostQuery,
+  PostsQuery,
+  Relation,
+  RelationQueryOptions,
+  GetPostOption,
+  Token,
+  User,
+  UserData,
+  RelationshipResponse,
+  Votes
+} from "./republik-types"
 import fs from "fs"
 import mime from "mime"
+import { RepublikAPIError } from "./error"
 
 const cleanUrl = (url: string): string => {
   url = url.split("?")[0]
@@ -12,39 +24,16 @@ const cleanUrl = (url: string): string => {
   return url
 }
 
-export interface getFollowers<T extends any> {
-  (userId: string, opt?: RelationQueryOptions): Promise<T>
-}
-
-export interface getFollowing<T extends any> {
-  (userId: string, opt?: RelationQueryOptions): Promise<T>
-}
-
-export interface getPosts<T extends any> {
-  (userId: string, options?: GetPostOption): Promise<T>
-}
-
-export interface getPost<T extends any> {
-  (activityId: string, options?: GetPostOption): Promise<T>
-}
-
-export interface getProfile<T extends any> {
-  (userId?: string): Promise<T>
-}
-export interface getAccount<T extends any> {
-  (userId?: string): Promise<T>
-}
-
-export interface _getRelations<T extends any> {
-  (userId: string, followers: boolean, q: string, lastKey: string, startAt: string): Promise<T>
-}
-
 export declare namespace RepubliKAPI {
-  type Auth = {
-    userId: string
-    authToken: string
-    refreshToken?: string
+  type Options = {
     verbose?: boolean
+  }
+
+  type Auth = {
+    userId?: string
+    refreshToken?: string
+    authToken?: string
+    accessToken?: string
   }
 }
 
@@ -63,40 +52,79 @@ export type ErrorResponse = {
 
 export class RepubliKAPI {
   authToken: string
-  userId: string
+  accessToken: string
   refreshToken: string
+  streamToken: string
+  userId: string
+
   verbose: boolean
 
-  constructor(opts: RepubliKAPI.Auth) {
-    this.authToken = opts.authToken
-    this.userId = opts.userId || ""
-    this.refreshToken = opts.refreshToken || ""
-    this.verbose = opts.verbose || false
+  isAuthenticated: boolean
+
+  constructor(options?: RepubliKAPI.Options & RepubliKAPI.Auth) {
+    this.authToken = options?.authToken || ""
+    this.userId = options?.userId || ""
+    this.refreshToken = options?.refreshToken || ""
+
+    this.verbose = options?.verbose || false
+    this.isAuthenticated = false
   }
 
-  setAuthToken = (authToken: string) => {
-    this.authToken = authToken
+  authenticate = async (authOptions?: RepubliKAPI.Auth) => {
+    this.refreshToken = authOptions?.refreshToken ?? this.refreshToken
+    this.authToken = authOptions?.authToken ?? this.authToken
+    this.userId = authOptions?.userId ?? this.userId
+
+    try {
+      if (!this.refreshToken) {
+        if (!this.authToken) throw new RepublikAPIError("Impossible auth", "No auth data provided.")
+
+        if (this.verbose) console.log(`refreshToken is not set, better to set it`)
+
+        if (!this.userId) throw new RepublikAPIError("Impossible auth", "userId must be set with authToken")
+
+        const testAuth = (await this.Self.getProfile()) as any
+        if (!testAuth || testAuth?.id == undefined) throw new RepublikAPIError("Auth failed", testAuth?.message || "userId or authToken invalid.")
+      } else {
+        const tokens = await this._updateToken()
+
+        if (tokens?.message || !(tokens?.AuthenticationResult?.AccessToken && tokens?.AuthenticationResult?.IdToken)) {
+          throw new RepublikAPIError("Error on authentication", tokens)
+        }
+
+        this.authToken = tokens.AuthenticationResult.IdToken
+        this.accessToken = tokens.AuthenticationResult.AccessToken
+
+        const getAuthInfo = await this._getUserId()
+        const realUserId = getAuthInfo?.Username
+
+        if ((!realUserId && !this.userId) || realUserId.message) {
+          throw new RepublikAPIError("Something error", realUserId.message || "Could not get userId")
+        }
+
+        const newStreamToken = await this._getStreamToken()
+        this.streamToken = newStreamToken.getStreamToken
+        this.userId = realUserId
+      }
+      this.isAuthenticated = true
+      if (this.verbose) console.log(`Authentication success`)
+    } catch (err: any) {
+      console.log(err)
+      process.exit()
+    }
   }
 
-  setUserId = (userId: string) => {
-    this.userId = userId
-  }
+  getAuthToken = () => this.authToken
+  getAccessToken = () => this.accessToken
+  getUserId = () => this.userId
+  getRefreshToken = () => this.refreshToken
 
-  setRefreshToken = (refreshToken: string) => {
-    this.refreshToken = refreshToken
-  }
-
-  getAuthToken = () => {
-    return this.authToken
-  }
-
-  getUserId = () => {
-    return this.userId
-  }
-
-  getRefreshToken = () => {
-    return this.refreshToken
-  }
+  _getAuthData = () => ({
+    authToken: this.authToken,
+    userId: this.userId,
+    refreshToken: this.refreshToken,
+    accessToken: this.accessToken
+  })
 
   private _getHeaders = () => ({
     Accept: "*/*",
@@ -112,37 +140,41 @@ export class RepubliKAPI {
 
   private _getServiceProviderHeaders = () => ({
     "Content-Type": "application/x-amz-json-1.1",
-    "X-Amz-User-Agent": "aws-amplify/5.0.4 js",
-    "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth"
+    "X-Amz-User-Agent": "aws-amplify/5.0.4 js"
   })
 
-  private _getRelations: _getRelations<Relation | ErrorResponse | undefined> = async (
-    userId,
-    followers = false,
-    q = "",
-    lastKey = "",
-    startAt = ""
-  ) => {
-    let data: Relation | ErrorResponse | undefined = undefined
+  private _updateToken = async () => {
     try {
-      const params = `q=${q}&lastKey=${lastKey}&followers=${followers}&startAt=${startAt}`
-      const response = await axios.get(`${BASE_API_URL}/production/profile/${userId}/relations?${params}`, {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          ...this._getHeaders()
+      const response = await axios.post(
+        `${SERVICE_PROVIDER_URl}`,
+        {
+          AuthFlow: "REFRESH_TOKEN_AUTH",
+          ClientId: CLIENT_ID,
+          AuthParameters: {
+            DEVICE_KEY: null,
+            REFRESH_TOKEN: this.refreshToken
+          }
+        },
+        {
+          headers: {
+            "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth",
+            ...this._getServiceProviderHeaders()
+          }
         }
-      })
-      data = response?.data
+      )
+      return response?.data
     } catch (err: any) {
-      data = err?.response?.data
+      return err?.response?.data
     }
-    return data
   }
 
-  private _getToken = async (userId: string) => {
-    let data: Token | ErrorResponse | undefined = undefined
+  private _getStreamToken = async (): Promise<Token> => {
+    if (this.verbose) {
+      console.log(`Getting streamToken...`)
+    }
+    let data: any = []
     try {
-      const response = await axios.get(`${BASE_API_URL}/production/profile/${userId}/tokens`, {
+      const response = await axios.get(`${BASE_API_URL}/production/profile/${this.userId}/tokens`, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,
           ...this._getHeaders()
@@ -351,6 +383,101 @@ export class RepubliKAPI {
     }
   }
 
+  private _getUserId = async () => {
+    if (!this.refreshToken) return { error: true, message: "refreshToken not set" } as ErrorResponse
+    try {
+      const response = await axios.post(
+        `${SERVICE_PROVIDER_URl}`,
+        {
+          AccessToken: this.accessToken
+        },
+        {
+          headers: {
+            "X-Amz-Target": "AWSCognitoIdentityProviderService.GetUser",
+            ...this._getServiceProviderHeaders()
+          }
+        }
+      )
+      return response?.data
+    } catch (err: any) {
+      return err?.response?.data
+    }
+  }
+
+  private _getProfile = async (userId: string) => {
+    if (!this.isAuthenticated) throw new Error("Not authenticated")
+    let data = undefined
+    try {
+      const response = await axios.get(`${BASE_API_URL}/production/profile/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          ...this._getHeaders()
+        }
+      })
+      data = response?.data
+    } catch (err: any) {
+      data = err?.response?.data
+    }
+    return data
+  }
+
+  private _getRelations = async (userId: string, followers: boolean, options?: RelationQueryOptions) => {
+    let data: Relation | undefined = undefined
+    try {
+      const params = `q=${options.q}&lastKey=${options.lastKey}&followers=${followers}&startAt=${options.startAt}`
+      const response = await axios.get(`${BASE_API_URL}/production/profile/${userId}/relations?${params}`, {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          ...this._getHeaders()
+        }
+      })
+      data = response?.data
+    } catch (err: any) {
+      data = err?.response?.data
+    }
+    return data
+  }
+
+  private _createRelationship = async (userId: string, type: "block" | "followers" = "followers") => {
+    if (!this.isAuthenticated) throw new Error("Not authenticated")
+    if (userId == this.userId) throw new RepublikAPIError("Cannot do to self", { target: userId, self: this.userId })
+    let data: any | undefined = undefined
+    try {
+      const response = await axios.post(
+        `${BASE_API_URL}/production/profile/${userId}/${type}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${this.authToken}`,
+            ...this._getHeaders()
+          }
+        }
+      )
+      data = response?.data
+    } catch (err: any) {
+      data = err?.response?.data
+    }
+    return data
+  }
+
+  private _destroyRelationship = async (userId: string, type: "block" | "followers" = "followers") => {
+    if (!this.isAuthenticated) throw new Error("Not authenticated")
+    if (userId == this.userId) throw new RepublikAPIError("Cannot do to self", { target: userId, self: this.userId })
+    let data: any | undefined = undefined
+    try {
+      const response = await axios.delete(`${BASE_API_URL}/production/profile/${userId}/followers`, {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          ...this._getHeaders()
+        }
+      })
+      data = response?.data
+    } catch (err: any) {
+      data = err?.response?.data
+    }
+    return data
+  }
+
   Self = {
     updateProfile: {
       name: async (newValue: string): Promise<any> => this._updateProfile(newValue, "name"),
@@ -368,19 +495,17 @@ export class RepubliKAPI {
         return await this._uploadMedia("PUT", `avatar/avatar.${media.fileExtension}`, media.mimeType, media.mediaData)
       }
     },
-    getProfile: async (): Promise<UserData | ErrorResponse | undefined> => await this.getProfile(this.userId),
-    getVotes: async (): Promise<any> => await this._getVotes(),
-    getFollowers: async (opt?: RelationQueryOptions): Promise<Relation | ErrorResponse | undefined> => await this.getFollowers(this.userId, opt),
-    getFollowing: async (opt?: RelationQueryOptions): Promise<Relation | ErrorResponse | undefined> => await this.getFollowing(this.userId, opt),
+    getProfile: async (): Promise<UserData | ErrorResponse | undefined> => await this._getProfile(this.userId),
+    getVotes: async (): Promise<Votes> => await this._getVotes(),
+    getFollowers: async (options?: RelationQueryOptions): Promise<Relation | any> => {
+      return await this._getRelations(this.userId, true, options)
+    },
+    getFollowing: async (options?: RelationQueryOptions): Promise<Relation | any> => {
+      return await this._getRelations(this.userId, false, options)
+    },
     getPosts: async (opt?: GetPostOption): Promise<PostsQuery | undefined> => await this.getPosts(this.userId, opt),
     getTimeline: async (opt?: GetPostOption): Promise<PostsQuery | undefined> => {
       let data: PostsQuery | undefined = undefined
-      let streamToken: string | undefined = undefined
-
-      const token = await this._getToken(this.userId)
-      streamToken = (token as Token)?.getStreamToken || undefined
-      if (!streamToken) return undefined
-
       const location = opt?.location || "unspecified"
       const limit = opt?.limit || 25
       const id_lt = opt?.id_lt || ""
@@ -391,7 +516,7 @@ export class RepubliKAPI {
         const params = `api_key=${API_KEY}&location=${location}&limit=${limit}&with_activity_data=${with_activity_data}&id_lt=${id_lt}&kind=${kind}`
         const response = await axios.get(`${STREAM_API_URL}/enrich/feed/timeline/${this.userId}/?${params}`, {
           headers: {
-            Authorization: streamToken,
+            Authorization: this.streamToken,
             ...this._getStreamHeaders(),
             ...this._getHeaders()
           }
@@ -402,82 +527,35 @@ export class RepubliKAPI {
       }
       return data
     },
-    follow: async (userId: string): Promise<RelationshipResponse | undefined> => {
-      let data: any | undefined = undefined
+    refreshToken: async (): Promise<void> => {
+      if (!this.refreshToken) throw new Error("refreshToken is not set")
       try {
-        const response = await axios.post(
-          `${BASE_API_URL}/production/profile/${userId}/followers`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${this.authToken}`,
-              ...this._getHeaders()
-            }
-          }
-        )
-        data = response?.data
-      } catch (err: any) {
-        data = err?.response?.data
-      }
-      return data
-    },
-    unfollow: async (userId: string): Promise<RelationshipResponse | undefined> => {
-      let data: any | undefined = undefined
-      try {
-        const response = await axios.delete(`${BASE_API_URL}/production/profile/${userId}/followers`, {
-          headers: {
-            Authorization: `Bearer ${this.authToken}`,
-            ...this._getHeaders()
-          }
-        })
-        data = response?.data
-      } catch (err: any) {
-        data = err?.response?.data
-      }
-      return data
-    },
-    block: async (userId: string): Promise<RelationshipResponse | undefined> => {
-      const requestURL = `${BASE_API_URL}/production/profile/${userId}/block`
-      let data: any | undefined = undefined
+        const newToken = await this._updateToken()
 
-      const requestOptions = await this._requestOptionsMethod(requestURL, {
-        "Access-Control-Request-Headers": "authorization,content-type,x-custom-app-version-tag",
-        "Access-Control-Request-Method": "POST"
-      })
+        if (!newToken?.AuthenticationResult?.IdToken) throw new RepublikAPIError("Cannot get authToken", newToken)
 
-      if (!requestOptions) return undefined
-      try {
-        const response = await axios.post(
-          requestURL,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${this.authToken}`,
-              ...this._getHeaders()
-            }
+        this.accessToken = newToken.AuthenticationResult.accessToken
+        this.authToken = newToken.AuthenticationResult.IdToken
+
+        if (this.verbose) {
+          console.log(`accessToken and authToken refreshed.`)
+        }
+
+        const newStreamToken = await this._getStreamToken()
+        if (newStreamToken?.getStreamToken) {
+          this.streamToken = newStreamToken.getStreamToken
+          if (this.verbose) {
+            console.log(`streamToken refreshed.`)
           }
-        )
-        data = response?.data
+        }
       } catch (err: any) {
-        data = err?.response?.data
+        console.log(err)
       }
-      return data
     },
-    unblock: async (userId: string): Promise<RelationshipResponse | undefined> => {
-      let data: any | undefined = undefined
-      try {
-        const response = await axios.delete(`${BASE_API_URL}/production/profile/${userId}/unblock`, {
-          headers: {
-            Authorization: `Bearer ${this.authToken}`,
-            ...this._getHeaders()
-          }
-        })
-        data = response?.data
-      } catch (err: any) {
-        data = err?.response?.data
-      }
-      return data
-    },
+    follow: async (userId: string): Promise<RelationshipResponse | any> => await this._createRelationship(userId),
+    block: async (userId: string): Promise<RelationshipResponse | any> => await this._createRelationship(userId, "block"),
+    unfollow: async (userId: string): Promise<RelationshipResponse | any> => await this._destroyRelationship(userId),
+    unblock: async (userId: string): Promise<RelationshipResponse | any> => await this._destroyRelationship(userId, "block"),
     like: async (postId: string): Promise<void> => {
       let data: any | undefined = undefined
       try {
@@ -509,7 +587,7 @@ export class RepubliKAPI {
       let data: any | undefined = undefined
       let streamToken: string | undefined = undefined
 
-      const token = await this._getToken(this.userId)
+      const token = await this._getStreamToken()
       streamToken = (token as Token)?.getStreamToken || undefined
       if (!streamToken) return undefined
 
@@ -585,7 +663,7 @@ export class RepubliKAPI {
 
       return data
     },
-    post: async (caption: string, mediaSources: string[]) => {
+    createPost: async (caption: string, mediaSources: string[]) => {
       if (mediaSources.length == 0 || mediaSources.length > 3) {
         if (this.verbose) {
           if (mediaSources.length == 0) console.log(`Media required`)
@@ -646,7 +724,56 @@ export class RepubliKAPI {
       }
       return false // ! Cannot get postId
     },
-    delete: async (postId: string) => {
+    createConversation: async (title: string, caption: string, mediaSources: string) => {
+      let data: any | undefined = undefined
+      let preparedMedia: PostMedia
+
+      const prePrepareMedia = await this._prepareMedia(mediaSources)
+      if (prePrepareMedia) {
+        preparedMedia = prePrepareMedia
+      }
+
+      if (preparedMedia) {
+        if (this.verbose) {
+          console.log("Inserted media doesn't pass requirements. Operation aborted.")
+        }
+        throw new Error("Failed getting media data")
+      }
+
+      try {
+        const requestOptions = await this._requestOptionsMethod(`${BASE_API_URL}/production/conversations`, {
+          Authorization: `Bearer ${this.authToken}`,
+          "Access-Control-Request-Headers": "authorization,content-type,x-custom-app-version-tag",
+          "Access-Control-Request-Method": "POST"
+        })
+
+        if (!requestOptions) return undefined
+
+        const response = await axios.post(
+          `${BASE_API_URL}/production/posts`,
+          { text: caption, title, mentions: [], media: { type: preparedMedia.commonType } },
+          {
+            headers: {
+              Authorization: `Bearer ${this.authToken}`,
+              ...this._getHeaders()
+            }
+          }
+        )
+        data = response?.data
+      } catch (err: any) {
+        data = err?.response?.data
+        if (this.verbose) {
+          console.log("Post failed. Reason:", data)
+        }
+        return false // ! Cannot get postId
+      }
+      const postId = data?.id
+      if (postId) {
+        await this._uploadMedia("PUT", `conversation/${postId}.${preparedMedia.fileExtension}`, preparedMedia.mimeType, preparedMedia.mediaData)
+        return true
+      }
+    },
+    deletePost: async (postId: string) => {
       const postData = await this.getPost(postId)
       const objectId = postData?.activity.object?.id
       if (!objectId) return undefined //! Post not found
@@ -667,8 +794,33 @@ export class RepubliKAPI {
             ...this._getHeaders()
           }
         })
-        console.log(response)
         return true
+      } catch (err: any) {
+        return false
+      }
+    },
+    deleteConversation: async (postId: string) => {
+      const postData = await this.getPost(postId)
+      const objectId = postData?.activity.object?.id
+      if (!objectId) return undefined //! Post not found
+      try {
+        const requestUrl = `${BASE_API_URL}/production/conversations/${objectId}`
+        const requestOptions = await this._requestOptionsMethod(requestUrl, {
+          Authorization: `Bearer ${this.authToken}`,
+          "Access-Control-Request-Headers": "authorization,content-type,x-custom-app-version-tag",
+          "Access-Control-Request-Method": "DELETE"
+        })
+
+        if (!requestOptions) return undefined
+
+        const response = await axios.delete(requestUrl, {
+          headers: {
+            Authorization: `Bearer ${this.authToken}`,
+            ...this._getHeaders()
+          }
+        })
+        if (response) return true
+        return false
       } catch (err: any) {
         return false
       }
@@ -713,37 +865,21 @@ export class RepubliKAPI {
     return data
   }
 
-  getProfile: getProfile<UserData | ErrorResponse | undefined> = async (userId) => {
-    let data: UserData | ErrorResponse | undefined = undefined
-    try {
-      const response = await axios.get(`${BASE_API_URL}/production/profile/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          ...this._getHeaders()
-        }
-      })
-      data = response?.data
-    } catch (err: any) {
-      data = err?.response?.data
-    }
-    return data
+  getProfile = async (userId: string): Promise<UserData | ErrorResponse | undefined> => await this._getProfile(userId)
+
+  getFollowers = async (userId: string, options?: RelationQueryOptions): Promise<Relation | any> => {
+    return await this._getRelations(userId, true, options)
   }
 
-  getFollowers: getFollowers<Relation | ErrorResponse | undefined> = async (userId, opt) => {
-    const response = await this._getRelations(userId, true, opt?.q, opt?.lastKey, opt?.startAt)
-    return response
+  getFollowing = async (userId: string, options?: RelationQueryOptions): Promise<Relation | any> => {
+    return await this._getRelations(userId, false, options)
   }
 
-  getFollowing: getFollowing<Relation | ErrorResponse | undefined> = async (userId, opt) => {
-    const response = await this._getRelations(userId, true, opt?.q, opt?.lastKey, opt?.startAt)
-    return response
-  }
-
-  getPosts: getPosts<PostsQuery | undefined> = async (userId, options) => {
+  getPosts = async (userId: string, options?: GetPostOption): Promise<PostQuery | any> => {
     let data: PostsQuery | undefined = undefined
     let streamToken: string | undefined = undefined
 
-    const token = await this._getToken(this.userId)
+    const token = await this._getStreamToken()
     streamToken = (token as Token)?.getStreamToken || undefined
     if (!streamToken) return undefined // ! Cannot get streamToken
 
@@ -768,11 +904,11 @@ export class RepubliKAPI {
     return data
   }
 
-  getPost: getPost<PostQuery | undefined> = async (postId, options) => {
+  getPost = async (postId: string, options?: GetPostOption): Promise<PostQuery | any> => {
     let data: PostQuery | undefined = undefined
     let streamToken: string | undefined = undefined
 
-    const token = await this._getToken(this.userId)
+    const token = await this._getStreamToken()
     streamToken = (token as Token)?.getStreamToken || undefined
     if (!streamToken) return undefined
 
@@ -799,32 +935,7 @@ export class RepubliKAPI {
     return data
   }
 
-  refreshAccessToken = async (): Promise<ErrorResponse | any> => {
-    if (!this.refreshToken) return { error: true, message: "refreshToken not set" } as ErrorResponse
-    try {
-      const response = await axios.post(
-        `${SERVICE_PROVIDER_URl}`,
-        {
-          AuthFlow: "REFRESH_TOKEN_AUTH",
-          ClientId: CLIENT_ID,
-          AuthParameters: {
-            DEVICE_KEY: null,
-            REFRESH_TOKEN: this.refreshToken
-          }
-        },
-        {
-          headers: { ...this._getServiceProviderHeaders() }
-        }
-      )
-      if (response?.data?.AuthenticationResult?.IdToken) {
-        return { newToken: response.data.AuthenticationResult.IdToken }
-      }
-      return response?.data
-    } catch (err: any) {
-      return err?.response?.data
-    }
-  }
-
+  /** Not important **/
   getRandomUser = async (limit: number | string = "10") => {
     let data: UserData | ErrorResponse | undefined = undefined
     try {

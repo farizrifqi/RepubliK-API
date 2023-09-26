@@ -1,4 +1,4 @@
-# RepubliK-API
+# RepubliK API
 
 **Disclaimer:** This project provides access to an unofficial API for informational and educational purposes only.
 
@@ -28,6 +28,8 @@ const republikgg = new RepubliKAPI({
   userId: "USER_ID"
 })
 
+republikgg.authenticate({})
+
 // Get posts from an user
 const getPostsOpt = {
   location: "",
@@ -41,21 +43,23 @@ republikgg.getPosts("USER_ID", getPostsOpt)
 republikgg.getProfile("USER_ID")
 ```
 
-### Post
+Read more about [authentication](#authentication).
+
+### 📝 Post
 
 ```ts
-republikgg.Self.post("CAPTION", ["MEDIA_URL", "MEDIA_FILEPATH"]) // Maximum 3
-republikgg.Self.delete("POST_ID")
+republikgg.Self.createPost("CAPTION", ["MEDIA_URL", "MEDIA_FILEPATH"]) // Maximum 3 media, createPost, deletePost
+republikgg.Self.createConversation("CAPTION", "MEDIA_URL") // createConversation, deleteConversation
 ```
 
-### Relationship
+### 💖 Relationship
 
 ```ts
 republikgg.Self.follow("USER_ID") // follow, unfollow
 republikgg.Self.block("USER_ID") // block, unblock
 ```
 
-### Reaction
+### 👍 Reaction
 
 **Note**: postId and activityId kind a same thing.
 
@@ -64,7 +68,7 @@ republikgg.Self.like("ACTIVITY_ID") // like, dislike
 republikgg.Self.comment("ACTIVITY_ID", "TEXT") // comment, uncomment
 ```
 
-### Update profile
+### ⚙️ Update profile
 
 ```ts
 republikgg.Self.updateProfile.name("DISPLAY NAME")
@@ -77,29 +81,72 @@ republikgg.Self.updateProfile.photo("FILE_PATH") // from local file
 republikgg.Self.updateProfile.photo("URL") // from url
 ```
 
-### Refreshing Access Token
+### 🔃 Refreshing Token
 
 ```ts
-import { RepubliKAPI } from "republik-api"
-
-const republikgg = new RepubliKAPI({
-  authToken: "ACCESS_TOKEN",
-  userId: "USER_ID",
-  refreshToken: "REFRESH_TOKEN"
-})
-
-republikgg.refreshAccessToken().then((response) => {
-  console.log(response.newToken)
-})
+republikgg.Self.updateToken()
 ```
 
-#### Access Token
+#### Auth Token
 
-Its property named `authToken` on constructing class. Access Token (Bearer) can be obtained via **Network Tab** on your browser. Or just generate it using `refreshToken`.
+Its property named `authToken` on constructing class. Access Token (Bearer) can be obtained via **Network Tab** on your browser. `authToken` will expired in 3600s (an hour).
 
 #### Refresh Token
 
-Can be found on `localStorage`. The key named `XXXX.XXXX.XXXX.refreshToken`. New token will be alive for an hour.
+Used to refresh `authToken`. Can be found on `localStorage`. The key named `XXXX.XXXX.XXXX.refreshToken`. New token will be live for an hour. Refresh token will change while the session closed (logout) from the device.
+
+## 🔒 Authentication
+
+#### Auth options
+
+```ts
+const AuthOptions = {
+  refreshToken?: string,
+  authToken?: string,
+  userId?: string
+}
+```
+
+**There are two ways to do authentication**
+
+```ts
+const republikgg = new RepublikAPI(AuthOptions)
+republikgg.authenticate()
+
+// or
+
+const republikgg = new RepublikAPI()
+republikgg.authenticate(AuthOptions)
+```
+
+And there are two kind of authentication.
+
+```ts
+const republikgg = new RepublikAPI()
+republikgg.authenticate({ refreshToken })
+
+// or
+
+const republikgg = new RepublikAPI()
+republikgg.authenticate({ userId, authToken })
+```
+
+Authentication with `refreshToken` would be best since `authToken` only alive for an hour and required `userId`.
+For now, it's **only tested** using Google SSO authentication, not yet tried Facebook signin method.
+
+## ✏️ Some changes
+
+<details>
+  <summary><strong>1.0.x</strong> > <strong>1.1.x</strong></summary>
+
+Functions:
+
+- `Self.post()` to `Self.createPost()`
+- `refreshAccessToken()` to `Self.updateToken()` No longer return value, new token automatically set.
+- `authenticate()` Now needed after constructing class.
+</details>
+
+> Feel free to open issue or opening pull request. A star (⭐) would be very amazing!
 
 ## Legal
 

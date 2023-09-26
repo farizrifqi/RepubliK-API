@@ -212,3 +212,9 @@ export interface GetPostOption {
   id_lt?: string
   kind?: string
 }
+
+export interface Votes {
+  id: string
+  username: string
+  remainVotes: number
+}
