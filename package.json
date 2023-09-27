@@ -1,9 +1,18 @@
 {
   "name": "republik-api",
-  "version": "1.1.0-a",
+  "version": "1.1.1",
   "description": "Unofficial RepubliK.gg API",
   "main": "./dist/index.js",
+  "type": "commonjs",
+  "source": "./republik-api/index.ts",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "test": "ts-node ./src/test/run.ts",
     "build": "tsc --build",

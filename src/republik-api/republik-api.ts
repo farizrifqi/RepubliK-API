@@ -174,7 +174,7 @@ export class RepubliKAPI {
     }
     let data: any = []
     try {
-      const response = await axios.get(`${BASE_API_URL}/production/profile/${this.userId}/tokens`, {
+      const response = await axios.get(`${BASE_API_URL}/profile/${this.userId}/tokens`, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,
           ...this._getHeaders()
@@ -189,7 +189,7 @@ export class RepubliKAPI {
 
   private _getVotes = async () => {
     try {
-      const response = await axios.get(`${BASE_API_URL}/production/remaining-votes/${this.userId}`, {
+      const response = await axios.get(`${BASE_API_URL}/remaining-votes/${this.userId}`, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,
           ...this._getHeaders()
@@ -204,7 +204,7 @@ export class RepubliKAPI {
   private _searchUserByUsername = async (username: string) => {
     let data: any = []
     try {
-      const response = await axios.get(`${BASE_API_URL}/production/profile/mentions-autocomplete?q=${username.toLowerCase()}`, {
+      const response = await axios.get(`${BASE_API_URL}/profile/mentions-autocomplete?q=${username.toLowerCase()}`, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,
           ...this._getHeaders()
@@ -226,7 +226,7 @@ export class RepubliKAPI {
       username: current?.username
     }
     try {
-      const response = await axios.put(`${BASE_API_URL}/production/profile/${this.userId}/`, defaultPayload, {
+      const response = await axios.put(`${BASE_API_URL}/profile/${this.userId}/`, defaultPayload, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,
           ...this._getHeaders()
@@ -301,15 +301,16 @@ export class RepubliKAPI {
 
   private _signMediaUpload = async (action: string, path: string, contentType: string) => {
     let data: any | undefined = undefined
+    const url = `${BASE_API_URL}/storage/sign`
+    const requestOptions = await this._requestOptionsMethod(url, {
+      Authorization: `Bearer ${this.authToken}`,
+      "Access-Control-Request-Headers": "access-control-allow-origin,content-type",
+      "Access-Control-Request-Method": "PUT"
+    })
+    if (!requestOptions) return undefined
     try {
-      const requestOptions = await this._requestOptionsMethod(`${BASE_API_URL}/production/storage/sign`, {
-        Authorization: `Bearer ${this.authToken}`,
-        "Access-Control-Request-Headers": "access-control-allow-origin,content-type",
-        "Access-Control-Request-Method": "PUT"
-      })
-      if (!requestOptions) return undefined
       const response = await axios.post(
-        `${BASE_API_URL}/production/storage/sign`,
+        url,
         { action, contentType, filePath: path },
         {
           headers: {
@@ -318,7 +319,6 @@ export class RepubliKAPI {
           }
         }
       )
-
       data = response?.data
     } catch (err: any) {
       data = err?.response?.data
@@ -408,7 +408,7 @@ export class RepubliKAPI {
     if (!this.isAuthenticated) throw new Error("Not authenticated")
     let data = undefined
     try {
-      const response = await axios.get(`${BASE_API_URL}/production/profile/${userId}`, {
+      const response = await axios.get(`${BASE_API_URL}/profile/${userId}`, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,
           ...this._getHeaders()
@@ -421,11 +421,12 @@ export class RepubliKAPI {
     return data
   }
 
-  private _getRelations = async (userId: string, followers: boolean, options?: RelationQueryOptions) => {
+  private _getRelations = async (userId: string, followers: boolean = false, options?: RelationQueryOptions) => {
     let data: Relation | undefined = undefined
     try {
-      const params = `q=${options.q}&lastKey=${options.lastKey}&followers=${followers}&startAt=${options.startAt}`
-      const response = await axios.get(`${BASE_API_URL}/production/profile/${userId}/relations?${params}`, {
+      const params = `q=${options?.q || ""}&lastKey=${options?.lastKey || ""}&followers=${followers}&startAt=${options?.startAt || ""}`
+      console.log(params)
+      const response = await axios.get(`${BASE_API_URL}/profile/${userId}/relations?${params}`, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,
           ...this._getHeaders()
@@ -433,6 +434,7 @@ export class RepubliKAPI {
       })
       data = response?.data
     } catch (err: any) {
+      console.log(err)
       data = err?.response?.data
     }
     return data
@@ -444,7 +446,7 @@ export class RepubliKAPI {
     let data: any | undefined = undefined
     try {
       const response = await axios.post(
-        `${BASE_API_URL}/production/profile/${userId}/${type}`,
+        `${BASE_API_URL}/profile/${userId}/${type}`,
         {},
         {
           headers: {
@@ -465,7 +467,7 @@ export class RepubliKAPI {
     if (userId == this.userId) throw new RepublikAPIError("Cannot do to self", { target: userId, self: this.userId })
     let data: any | undefined = undefined
     try {
-      const response = await axios.delete(`${BASE_API_URL}/production/profile/${userId}/followers`, {
+      const response = await axios.delete(`${BASE_API_URL}/profile/${userId}/followers`, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,
           ...this._getHeaders()
@@ -556,11 +558,11 @@ export class RepubliKAPI {
     block: async (userId: string): Promise<RelationshipResponse | any> => await this._createRelationship(userId, "block"),
     unfollow: async (userId: string): Promise<RelationshipResponse | any> => await this._destroyRelationship(userId),
     unblock: async (userId: string): Promise<RelationshipResponse | any> => await this._destroyRelationship(userId, "block"),
-    like: async (postId: string): Promise<void> => {
+    like: async (postId: string): Promise<any> => {
       let data: any | undefined = undefined
       try {
         const response = await axios.post(
-          `${BASE_API_URL}/production/activity-likes`,
+          `${BASE_API_URL}/activity-likes`,
           { postId },
           {
             headers: {
@@ -575,7 +577,7 @@ export class RepubliKAPI {
       }
       return data
     },
-    dislike: async (postId: string) => {
+    dislike: async (postId: string): Promise<any> => {
       const postData = await this.getPost(postId)
       const reactionList = postData?.activity.latest_reactions?.like
       if (!reactionList) return undefined //! No latest reaction or failed
@@ -616,7 +618,7 @@ export class RepubliKAPI {
       }
       return data
     },
-    comment: async (commentText: string, postId: string, mentions: string[] = []): Promise<void> => {
+    comment: async (commentText: string, postId: string, mentions: string[] = []): Promise<any> => {
       let data: any | undefined = undefined
       try {
         const requestData = {
@@ -625,7 +627,7 @@ export class RepubliKAPI {
           reactionTargetId: postId
         }
 
-        const response = await axios.post(`${BASE_API_URL}/production/activity-comments/${postId}`, requestData, {
+        const response = await axios.post(`${BASE_API_URL}/activity-comments/${postId}`, requestData, {
           headers: {
             Authorization: `Bearer ${this.authToken}`,
             ...this._getHeaders()
@@ -637,10 +639,10 @@ export class RepubliKAPI {
       }
       return data
     },
-    uncomment: async (postId: string, commentId: string) => {
+    uncomment: async (postId: string, commentId: string): Promise<any> => {
       let data: any | undefined = undefined
       try {
-        const requestUrl = `${BASE_API_URL}/production/activity-comments/${postId}/comments/${commentId}`
+        const requestUrl = `${BASE_API_URL}/activity-comments/${postId}/comments/${commentId}`
         const requestOptions = await this._requestOptionsMethod(requestUrl, {
           Authorization: `Bearer ${this.authToken}`,
           "Access-Control-Request-Headers": "authorization,content-type,x-custom-app-version-tag",
@@ -663,7 +665,7 @@ export class RepubliKAPI {
 
       return data
     },
-    createPost: async (caption: string, mediaSources: string[]) => {
+    createPost: async (caption: string, mediaSources: string[]): Promise<any> => {
       if (mediaSources.length == 0 || mediaSources.length > 3) {
         if (this.verbose) {
           if (mediaSources.length == 0) console.log(`Media required`)
@@ -688,9 +690,9 @@ export class RepubliKAPI {
         }
         return undefined // ! One fail = aborted
       }
-
+      const url = `${BASE_API_URL}/posts`
       try {
-        const requestOptions = await this._requestOptionsMethod(`${BASE_API_URL}/production/posts`, {
+        const requestOptions = await this._requestOptionsMethod(url, {
           Authorization: `Bearer ${this.authToken}`,
           "Access-Control-Request-Headers": "authorization,content-type,x-custom-app-version-tag",
           "Access-Control-Request-Method": "POST"
@@ -699,7 +701,7 @@ export class RepubliKAPI {
         if (!requestOptions) return undefined
 
         const response = await axios.post(
-          `${BASE_API_URL}/production/posts`,
+          url,
           { text: caption, mentions: [], media: preparedMedia.map((media) => ({ type: media.commonType })) },
           {
             headers: {
@@ -724,24 +726,24 @@ export class RepubliKAPI {
       }
       return false // ! Cannot get postId
     },
-    createConversation: async (title: string, caption: string, mediaSources: string) => {
+    createConversation: async (title: string, caption: string, mediaSources: string): Promise<any> => {
       let data: any | undefined = undefined
       let preparedMedia: PostMedia
 
       const prePrepareMedia = await this._prepareMedia(mediaSources)
-      if (prePrepareMedia) {
-        preparedMedia = prePrepareMedia
-      }
 
-      if (preparedMedia) {
+      if (!prePrepareMedia) {
         if (this.verbose) {
           console.log("Inserted media doesn't pass requirements. Operation aborted.")
         }
         throw new Error("Failed getting media data")
       }
 
+      preparedMedia = prePrepareMedia
+
+      const url = `${BASE_API_URL}/conversations`
       try {
-        const requestOptions = await this._requestOptionsMethod(`${BASE_API_URL}/production/conversations`, {
+        const requestOptions = await this._requestOptionsMethod(url, {
           Authorization: `Bearer ${this.authToken}`,
           "Access-Control-Request-Headers": "authorization,content-type,x-custom-app-version-tag",
           "Access-Control-Request-Method": "POST"
@@ -750,8 +752,8 @@ export class RepubliKAPI {
         if (!requestOptions) return undefined
 
         const response = await axios.post(
-          `${BASE_API_URL}/production/posts`,
-          { text: caption, title, mentions: [], media: { type: preparedMedia.commonType } },
+          url,
+          { caption: caption, title: title, mentions: [], media: { type: preparedMedia.commonType } },
           {
             headers: {
               Authorization: `Bearer ${this.authToken}`,
@@ -773,13 +775,13 @@ export class RepubliKAPI {
         return true
       }
     },
-    deletePost: async (postId: string) => {
+    deletePost: async (postId: string): Promise<any> => {
       const postData = await this.getPost(postId)
       const objectId = postData?.activity.object?.id
       if (!objectId) return undefined //! Post not found
       let data: any | undefined = undefined
       try {
-        const requestUrl = `${BASE_API_URL}/production/posts/${objectId}`
+        const requestUrl = `${BASE_API_URL}/posts/${objectId}`
         const requestOptions = await this._requestOptionsMethod(requestUrl, {
           Authorization: `Bearer ${this.authToken}`,
           "Access-Control-Request-Headers": "authorization,content-type,x-custom-app-version-tag",
@@ -799,12 +801,12 @@ export class RepubliKAPI {
         return false
       }
     },
-    deleteConversation: async (postId: string) => {
+    deleteConversation: async (postId: string): Promise<any> => {
       const postData = await this.getPost(postId)
       const objectId = postData?.activity.object?.id
       if (!objectId) return undefined //! Post not found
       try {
-        const requestUrl = `${BASE_API_URL}/production/conversations/${objectId}`
+        const requestUrl = `${BASE_API_URL}/conversations/${objectId}`
         const requestOptions = await this._requestOptionsMethod(requestUrl, {
           Authorization: `Bearer ${this.authToken}`,
           "Access-Control-Request-Headers": "authorization,content-type,x-custom-app-version-tag",
@@ -852,7 +854,7 @@ export class RepubliKAPI {
   getAccount = async (userId: string) => {
     let data: UserData | ErrorResponse | undefined = undefined
     try {
-      const response = await axios.get(`${BASE_API_URL}/production/accounts/${userId}`, {
+      const response = await axios.get(`${BASE_API_URL}/accounts/${userId}`, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,
           ...this._getHeaders()
@@ -936,21 +938,21 @@ export class RepubliKAPI {
   }
 
   /** Not important **/
-  getRandomUser = async (limit: number | string = "10") => {
-    let data: UserData | ErrorResponse | undefined = undefined
-    try {
-      const response = await axios.get(`${BASE_API_URL}/production/profile?limit=${limit}`, {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          ...this._getHeaders()
-        }
-      })
-      data = response?.data
-    } catch (err: any) {
-      data = err?.response?.data
-    }
-    return data
-  }
+  // getRandomUser = async (limit: number | string = "10") => {
+  //   let data: UserData | ErrorResponse | undefined = undefined
+  //   try {
+  //     const response = await axios.get(`${BASE_API_URL}/profile/?limit=${limit}`, {
+  //       headers: {
+  //         Authorization: `Bearer ${this.authToken}`,
+  //         ...this._getHeaders()
+  //       }
+  //     })
+  //     data = response?.data
+  //   } catch (err: any) {
+  //     data = err?.response?.data
+  //   }
+  //   return data
+  // }
 }
 
 export default RepubliKAPI

@@ -1,4 +1,4 @@
-export const BASE_API_URL = "https://657a5yyhsb.execute-api.ap-southeast-1.amazonaws.com"
+export const BASE_API_URL = "https://api.republik.global"
 export const STREAM_API_URL = "https://singapore-api.stream-io-api.com/api/v1.0"
 export const SERVICE_PROVIDER_URl = "https://cognito-idp.ap-southeast-1.amazonaws.com"
 export const BUCKET_URL =

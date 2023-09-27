@@ -1,5 +1,7 @@
 # RepubliK API
 
+[![NPM](https://img.shields.io/npm/v/republik-api.svg?style=flat-circle&labelColor=black)](https://www.npmjs.com/package/republik-api)
+
 **Disclaimer:** This project provides access to an unofficial API for informational and educational purposes only.
 
 ## Quickstart
@@ -87,14 +89,6 @@ republikgg.Self.updateProfile.photo("URL") // from url
 republikgg.Self.updateToken()
 ```
 
-#### Auth Token
-
-Its property named `authToken` on constructing class. Access Token (Bearer) can be obtained via **Network Tab** on your browser. `authToken` will expired in 3600s (an hour).
-
-#### Refresh Token
-
-Used to refresh `authToken`. Can be found on `localStorage`. The key named `XXXX.XXXX.XXXX.refreshToken`. New token will be live for an hour. Refresh token will change while the session closed (logout) from the device.
-
 ## 🔒 Authentication
 
 #### Auth options
@@ -133,6 +127,14 @@ republikgg.authenticate({ userId, authToken })
 
 Authentication with `refreshToken` would be best since `authToken` only alive for an hour and required `userId`.
 For now, it's **only tested** using Google SSO authentication, not yet tried Facebook signin method.
+
+#### Auth Token
+
+Its property named `authToken` on constructing class. Access Token (Bearer) can be obtained via **Network Tab** on your browser. `authToken` will expired in 3600s (an hour).
+
+#### Refresh Token
+
+Used to refresh `authToken`. Can be found on `localStorage`. The key named `XXXX.XXXX.XXXX.refreshToken`. New token will be live for an hour. Refresh token will change while the session closed (logout) from the device.
 
 ## ✏️ Some changes
 
