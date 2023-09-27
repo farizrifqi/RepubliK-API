@@ -425,7 +425,6 @@ export class RepubliKAPI {
     let data: Relation | undefined = undefined
     try {
       const params = `q=${options?.q || ""}&lastKey=${options?.lastKey || ""}&followers=${followers}&startAt=${options?.startAt || ""}`
-      console.log(params)
       const response = await axios.get(`${BASE_API_URL}/profile/${userId}/relations?${params}`, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,
@@ -434,7 +433,6 @@ export class RepubliKAPI {
       })
       data = response?.data
     } catch (err: any) {
-      console.log(err)
       data = err?.response?.data
     }
     return data
@@ -657,7 +655,6 @@ export class RepubliKAPI {
             ...this._getHeaders()
           }
         })
-        console.log(response)
         data = response?.data
       } catch (err: any) {
         data = err?.response?.data
