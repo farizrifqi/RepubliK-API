@@ -130,7 +130,8 @@ export class RepubliKAPI {
     Accept: "*/*",
     "Accept-Language": "en-US",
     Referer: "https://app.republik.gg/",
-    "X-Custom-App-Version-Tag": "6.0.2"
+    "X-Custom-App-Version-Tag": "6.0.3",
+    "User-Agent": "PostmanRuntime/7.33.0"
   })
 
   private _getStreamHeaders = () => ({
@@ -226,6 +227,12 @@ export class RepubliKAPI {
       username: current?.username
     }
     try {
+      const requestOptions = await this._requestOptionsMethod(`${BASE_API_URL}/profile/${this.userId}/`, {
+        Authorization: `Bearer ${this.authToken}`,
+        "Access-Control-Request-Headers": "authorization,content-type,x-custom-app-version-tag",
+        "Access-Control-Request-Method": "PUT"
+      })
+      if (!requestOptions) return undefined
       const response = await axios.put(`${BASE_API_URL}/profile/${this.userId}/`, defaultPayload, {
         headers: {
           Authorization: `Bearer ${this.authToken}`,

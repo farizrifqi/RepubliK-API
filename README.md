@@ -2,7 +2,7 @@
 
 [![NPM](https://img.shields.io/npm/v/republik-api.svg?style=flat-circle&labelColor=black)](https://www.npmjs.com/package/republik-api)
 
-**Disclaimer:** This project provides access to an unofficial API for informational and educational purposes only.
+**Disclaimer:** This TypeScript/Node.js project provides access to an unofficial RepubliK API, kind a implementation for informational and educational purposes only. RepubliK API could change at any moment but I will try my best to maintain and keep it up-to-date.
 
 ## Quickstart
 
