@@ -5,8 +5,10 @@ const run = async () => {
   const authToken = ""
 
   const republikgg = new RepubliKAPI({ authToken, userId })
-  const posts = await republikgg.Self.updateProfile.name("my name")
-  console.log(posts)
+  await republikgg.authenticate()
+
+  const response = await republikgg.Self.updateProfile.name("my name")
+  console.log(response)
 }
 
 ;(async () => {
