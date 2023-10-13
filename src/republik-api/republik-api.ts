@@ -102,9 +102,9 @@ export class RepubliKAPI {
           throw new RepublikAPIError("Something error", realUserId.message || "Could not get userId")
         }
 
+        this.userId = realUserId
         const newStreamToken = await this._getStreamToken()
         this.streamToken = newStreamToken.getStreamToken
-        this.userId = realUserId
       }
       this.isAuthenticated = true
       if (this.verbose) console.log(`Authentication success`)
@@ -130,7 +130,7 @@ export class RepubliKAPI {
     Accept: "*/*",
     "Accept-Language": "en-US",
     Referer: "https://app.republik.gg/",
-    "X-Custom-App-Version-Tag": "6.0.3",
+    "X-Custom-App-Version-Tag": "6.1.0",
     "User-Agent": "PostmanRuntime/7.33.0"
   })
 
