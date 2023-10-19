@@ -563,12 +563,12 @@ export class RepubliKAPI {
     block: async (userId: string): Promise<RelationshipResponse | any> => await this._createRelationship(userId, "block"),
     unfollow: async (userId: string): Promise<RelationshipResponse | any> => await this._destroyRelationship(userId),
     unblock: async (userId: string): Promise<RelationshipResponse | any> => await this._destroyRelationship(userId, "block"),
-    like: async (postId: string): Promise<any> => {
+    like: async (activityId: string): Promise<any> => {
       let data: any | undefined = undefined
       try {
         const response = await axios.post(
           `${BASE_API_URL}/activity-likes`,
-          { postId },
+          { activityId },
           {
             headers: {
               Authorization: `Bearer ${this.authToken}`,
@@ -582,8 +582,8 @@ export class RepubliKAPI {
       }
       return data
     },
-    dislike: async (postId: string): Promise<any> => {
-      const postData = await this.getPost(postId)
+    dislike: async (activityId: string): Promise<any> => {
+      const postData = await this.getPost(activityId)
       const reactionList = postData?.activity.latest_reactions?.like
       if (!reactionList) return undefined //! No latest reaction or failed
 
@@ -623,16 +623,16 @@ export class RepubliKAPI {
       }
       return data
     },
-    comment: async (commentText: string, postId: string, mentions: string[] = []): Promise<any> => {
+    comment: async (commentText: string, activityId: string, mentions: string[] = []): Promise<any> => {
       let data: any | undefined = undefined
       try {
         const requestData = {
           comment: commentText,
           mentions: mentions,
-          reactionTargetId: postId
+          reactionTargetId: activityId
         }
 
-        const response = await axios.post(`${BASE_API_URL}/activity-comments/${postId}`, requestData, {
+        const response = await axios.post(`${BASE_API_URL}/activity-comments/${activityId}`, requestData, {
           headers: {
             Authorization: `Bearer ${this.authToken}`,
             ...this._getHeaders()
@@ -644,10 +644,10 @@ export class RepubliKAPI {
       }
       return data
     },
-    uncomment: async (postId: string, commentId: string): Promise<any> => {
+    uncomment: async (activityId: string, commentId: string): Promise<any> => {
       let data: any | undefined = undefined
       try {
-        const requestUrl = `${BASE_API_URL}/activity-comments/${postId}/comments/${commentId}`
+        const requestUrl = `${BASE_API_URL}/activity-comments/${activityId}/comments/${commentId}`
         const requestOptions = await this._requestOptionsMethod(requestUrl, {
           Authorization: `Bearer ${this.authToken}`,
           "Access-Control-Request-Headers": "authorization,content-type,x-custom-app-version-tag",
@@ -718,17 +718,17 @@ export class RepubliKAPI {
       } catch (err: any) {
         data = err?.response?.data
       }
-      const postId = data?.id
-      if (postId) {
+      const activityId = data?.id
+      if (activityId) {
         await Promise.all(
-          preparedMedia.map((media, i) => this._uploadMedia("PUT", `post/${postId}_${i}.${media.fileExtension}`, media.mimeType, media.mediaData))
+          preparedMedia.map((media, i) => this._uploadMedia("PUT", `post/${activityId}_${i}.${media.fileExtension}`, media.mimeType, media.mediaData))
         )
         return true
       }
       if (this.verbose) {
         console.log("Post failed. Reason:", data)
       }
-      return false // ! Cannot get postId
+      return false // ! Cannot get activityId
     },
     createConversation: async (title: string, caption: string, mediaSources: string): Promise<any> => {
       let data: any | undefined = undefined
@@ -771,16 +771,16 @@ export class RepubliKAPI {
         if (this.verbose) {
           console.log("Post failed. Reason:", data)
         }
-        return false // ! Cannot get postId
+        return false // ! Cannot get activityId
       }
-      const postId = data?.id
-      if (postId) {
-        await this._uploadMedia("PUT", `conversation/${postId}.${preparedMedia.fileExtension}`, preparedMedia.mimeType, preparedMedia.mediaData)
+      const activityId = data?.id
+      if (activityId) {
+        await this._uploadMedia("PUT", `conversation/${activityId}.${preparedMedia.fileExtension}`, preparedMedia.mimeType, preparedMedia.mediaData)
         return true
       }
     },
-    deletePost: async (postId: string): Promise<any> => {
-      const postData = await this.getPost(postId)
+    deletePost: async (activityId: string): Promise<any> => {
+      const postData = await this.getPost(activityId)
       const objectId = postData?.activity.object?.id
       if (!objectId) return undefined //! Post not found
       let data: any | undefined = undefined
@@ -805,8 +805,8 @@ export class RepubliKAPI {
         return false
       }
     },
-    deleteConversation: async (postId: string): Promise<any> => {
-      const postData = await this.getPost(postId)
+    deleteConversation: async (activityId: string): Promise<any> => {
+      const postData = await this.getPost(activityId)
       const objectId = postData?.activity.object?.id
       if (!objectId) return undefined //! Post not found
       try {
@@ -910,7 +910,7 @@ export class RepubliKAPI {
     return data
   }
 
-  getPost = async (postId: string, options?: GetPostOption): Promise<PostQuery | any> => {
+  getPost = async (activityId: string, options?: GetPostOption): Promise<PostQuery | any> => {
     let data: PostQuery | undefined = undefined
     let streamToken: string | undefined = undefined
 
@@ -927,7 +927,7 @@ export class RepubliKAPI {
 
     try {
       const params = `api_key=${API_KEY}&location=${location}&limit=${limit}&with_activity_data=${with_activity_data}&id_lt=${id_lt}&kind=${kind}`
-      const response = await axios.get(`${STREAM_API_URL}/reaction/activity_id/${postId}/COMMENT/?${params}`, {
+      const response = await axios.get(`${STREAM_API_URL}/reaction/activity_id/${activityId}/COMMENT/?${params}`, {
         headers: {
           Authorization: streamToken,
           ...this._getStreamHeaders(),
