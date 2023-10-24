@@ -30,7 +30,7 @@ const republikgg = new RepubliKAPI({
   userId: "USER_ID"
 })
 
-republikgg.authenticate({})
+republikgg.authenticate()
 
 // Get posts from an user
 const getPostsOpt = {
@@ -138,6 +138,16 @@ Used to refresh `authToken`. Can be found on `localStorage`. The key named `XXXX
 
 ## ✏️ Some changes
 
+<details>
+  <summary><strong>1.3.x</strong> > <strong>1.4.x</strong></summary>
+  
+Changes:
+- Remove the `Postman/Runtine` User Agent
+- Allow use to user their own User Agent
+
+This version updated because [#4 Issue](https://github.com/farizrifqi/RepubliK-API/issues/4)
+
+</details>
 <details>
   <summary><strong>1.0.x</strong> > <strong>1.1.x</strong></summary>
 

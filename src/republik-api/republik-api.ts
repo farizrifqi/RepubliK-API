@@ -1,4 +1,4 @@
-import axios, { RawAxiosRequestHeaders } from "axios"
+import axios, { AxiosProxyConfig, AxiosRequestConfig, AxiosHeaders, RawAxiosRequestHeaders } from "axios"
 import { API_KEY, BASE_API_URL, CLIENT_ID, SERVICE_PROVIDER_URl, STREAM_API_URL } from "./constants"
 import {
   PostQuery,
@@ -27,6 +27,8 @@ const cleanUrl = (url: string): string => {
 export declare namespace RepubliKAPI {
   type Options = {
     verbose?: boolean
+    "User-Agent"?: string
+    // proxy?: AxiosProxyConfig
   }
 
   type Auth = {
@@ -57,16 +59,21 @@ export class RepubliKAPI {
   streamToken: string
   userId: string
 
+  "User-Agent": string
+  proxy: AxiosProxyConfig | null
   verbose: boolean
 
   isAuthenticated: boolean
 
   constructor(options?: RepubliKAPI.Options & RepubliKAPI.Auth) {
+    // this.proxy = options?.proxy || null // todo
+    this["User-Agent"] = options["User-Agent"] || null
+    this.verbose = options?.verbose || false
+
+    // Auth
     this.authToken = options?.authToken || ""
     this.userId = options?.userId || ""
     this.refreshToken = options?.refreshToken || ""
-
-    this.verbose = options?.verbose || false
     this.isAuthenticated = false
   }
 
@@ -118,6 +125,11 @@ export class RepubliKAPI {
   getAccessToken = () => this.accessToken
   getUserId = () => this.userId
   getRefreshToken = () => this.refreshToken
+  getUserAgent = () => this["User-Agent"]
+
+  setUserAgent = (ua: string): void => {
+    this["User-Agent"] = ua
+  }
 
   _getAuthData = () => ({
     authToken: this.authToken,
@@ -131,8 +143,16 @@ export class RepubliKAPI {
     "Accept-Language": "en-US",
     Referer: "https://app.republik.gg/",
     "X-Custom-App-Version-Tag": "6.1.0",
-    "User-Agent": "PostmanRuntime/7.33.0"
+    "User-Agent":
+      this["User-Agent"] || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
   })
+
+  private _getRequestConfig = (config: AxiosRequestConfig): AxiosRequestConfig => {
+    if (this.proxy && !config.proxy) {
+      config.proxy = this.proxy
+    }
+    return config
+  }
 
   private _getStreamHeaders = () => ({
     "Stream-Auth-Type": "jwt",
@@ -146,6 +166,10 @@ export class RepubliKAPI {
 
   private _updateToken = async () => {
     try {
+      const headers = {
+        "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth",
+        ...this._getServiceProviderHeaders()
+      }
       const response = await axios.post(
         `${SERVICE_PROVIDER_URl}`,
         {
@@ -156,12 +180,7 @@ export class RepubliKAPI {
             REFRESH_TOKEN: this.refreshToken
           }
         },
-        {
-          headers: {
-            "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth",
-            ...this._getServiceProviderHeaders()
-          }
-        }
+        this._getRequestConfig({ headers })
       )
       return response?.data
     } catch (err: any) {
@@ -174,13 +193,13 @@ export class RepubliKAPI {
       console.log(`Getting streamToken...`)
     }
     let data: any = []
+
     try {
-      const response = await axios.get(`${BASE_API_URL}/profile/${this.userId}/tokens`, {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          ...this._getHeaders()
-        }
-      })
+      const headers = {
+        Authorization: `Bearer ${this.authToken}`,
+        ...this._getHeaders()
+      }
+      const response = await axios.get(`${BASE_API_URL}/profile/${this.userId}/tokens`, this._getRequestConfig({ headers }))
       data = response?.data
     } catch (err: any) {
       data = err?.response?.data
@@ -190,12 +209,11 @@ export class RepubliKAPI {
 
   private _getVotes = async () => {
     try {
-      const response = await axios.get(`${BASE_API_URL}/remaining-votes/${this.userId}`, {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          ...this._getHeaders()
-        }
-      })
+      const headers = {
+        Authorization: `Bearer ${this.authToken}`,
+        ...this._getHeaders()
+      }
+      const response = await axios.get(`${BASE_API_URL}/remaining-votes/${this.userId}`, this._getRequestConfig({ headers }))
       return response?.data
     } catch (err: any) {
       return err?.response?.data
@@ -205,12 +223,14 @@ export class RepubliKAPI {
   private _searchUserByUsername = async (username: string) => {
     let data: any = []
     try {
-      const response = await axios.get(`${BASE_API_URL}/profile/mentions-autocomplete?q=${username.toLowerCase()}`, {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          ...this._getHeaders()
-        }
-      })
+      const headers = {
+        Authorization: `Bearer ${this.authToken}`,
+        ...this._getHeaders()
+      }
+      const response = await axios.get(
+        `${BASE_API_URL}/profile/mentions-autocomplete?q=${username.toLowerCase()}`,
+        this._getRequestConfig({ headers })
+      )
       data = response?.data
     } catch (err: any) {
       data = err?.response?.data
@@ -233,12 +253,11 @@ export class RepubliKAPI {
         "Access-Control-Request-Method": "PUT"
       })
       if (!requestOptions) return undefined
-      const response = await axios.put(`${BASE_API_URL}/profile/${this.userId}/`, defaultPayload, {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          ...this._getHeaders()
-        }
-      })
+      const headers = {
+        Authorization: `Bearer ${this.authToken}`,
+        ...this._getHeaders()
+      }
+      const response = await axios.put(`${BASE_API_URL}/profile/${this.userId}/`, defaultPayload, this._getRequestConfig({ headers }))
       return response?.data
     } catch (err: any) {
       return err?.response?.data
@@ -316,16 +335,11 @@ export class RepubliKAPI {
     })
     if (!requestOptions) return undefined
     try {
-      const response = await axios.post(
-        url,
-        { action, contentType, filePath: path },
-        {
-          headers: {
-            Authorization: `Bearer ${this.authToken}`,
-            ...this._getHeaders()
-          }
-        }
-      )
+      const headers = {
+        Authorization: `Bearer ${this.authToken}`,
+        ...this._getHeaders()
+      }
+      const response = await axios.post(url, { action, contentType, filePath: path }, this._getRequestConfig({ headers }))
       data = response?.data
     } catch (err: any) {
       data = err?.response?.data
@@ -336,38 +350,45 @@ export class RepubliKAPI {
   private _uploadMedia = async (method: string, path: string, contentType: string, mediaData: any) => {
     try {
       const signUrl = await this._signMediaUpload(method, path, contentType)
-      await axios.request({
-        url: signUrl.url,
-        method: "OPTIONS",
-        headers: {
-          Host: "production-sharedresources-userbucket9d85efed-n4ysz26kfcdl.s3.ap-southeast-1.amazonaws.com",
-          Accept: "*/*",
-          "Access-Control-Request-Headers": "access-control-allow-origin,content-type",
-          "Access-Control-Request-Method": "PUT",
-          Origin: "https://app.republik.gg",
-          Referer: "https://app.republik.gg/",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
-        }
-      })
-      await axios.request({
-        url: signUrl.url,
-        method: "PUT",
-        data: mediaData,
-        headers: {
-          "Content-Type": contentType,
-          Host: "production-sharedresources-userbucket9d85efed-n4ysz26kfcdl.s3.ap-southeast-1.amazonaws.com",
-          Accept: "*/*",
-          "Accept-Encoding": "gzip, deflate, br",
-          "Access-Control-Allow-Origin": "*",
-          Origin: "https://app.republik.gg",
-          Referer: "https://app.republik.gg/",
-          "Sec-Fetch-Dest": "empty",
-          "Sec-Fetch-Mode": "cors",
-          "Sec-Fetch-Site": "cross-site",
-          "Sec-GPC": 1,
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
-        }
-      })
+
+      await axios.request(
+        this._getRequestConfig({
+          url: signUrl.url,
+          method: "OPTIONS",
+          headers: {
+            Host: "production-sharedresources-userbucket9d85efed-n4ysz26kfcdl.s3.ap-southeast-1.amazonaws.com",
+            Accept: "*/*",
+            "Access-Control-Request-Headers": "access-control-allow-origin,content-type",
+            "Access-Control-Request-Method": "PUT",
+            Origin: "https://app.republik.gg",
+            Referer: "https://app.republik.gg/",
+            "User-Agent":
+              this["User-Agent"] || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
+          }
+        })
+      )
+      await axios.request(
+        this._getRequestConfig({
+          url: signUrl.url,
+          method: "PUT",
+          data: mediaData,
+          headers: {
+            "Content-Type": contentType,
+            Host: "production-sharedresources-userbucket9d85efed-n4ysz26kfcdl.s3.ap-southeast-1.amazonaws.com",
+            Accept: "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Access-Control-Allow-Origin": "*",
+            Origin: "https://app.republik.gg",
+            Referer: "https://app.republik.gg/",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "cross-site",
+            "Sec-GPC": 1,
+            "User-Agent":
+              this["User-Agent"] || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
+          }
+        })
+      )
       return true
     } catch (err) {
       if (this.verbose) {
@@ -379,7 +400,7 @@ export class RepubliKAPI {
 
   private _requestOptionsMethod = async (url: string, headers?: RawAxiosRequestHeaders) => {
     try {
-      await axios.options(url, { headers })
+      await axios.options(url, this._getRequestConfig({ headers }))
       return true
     } catch (err) {
       if (this.verbose) {
@@ -393,17 +414,16 @@ export class RepubliKAPI {
   private _getUserId = async () => {
     if (!this.refreshToken) return { error: true, message: "refreshToken not set" } as ErrorResponse
     try {
+      const headers = {
+        "X-Amz-Target": "AWSCognitoIdentityProviderService.GetUser",
+        ...this._getServiceProviderHeaders()
+      }
       const response = await axios.post(
         `${SERVICE_PROVIDER_URl}`,
         {
           AccessToken: this.accessToken
         },
-        {
-          headers: {
-            "X-Amz-Target": "AWSCognitoIdentityProviderService.GetUser",
-            ...this._getServiceProviderHeaders()
-          }
-        }
+        this._getRequestConfig({ headers })
       )
       return response?.data
     } catch (err: any) {
@@ -415,12 +435,11 @@ export class RepubliKAPI {
     if (!this.isAuthenticated) throw new Error("Not authenticated")
     let data = undefined
     try {
-      const response = await axios.get(`${BASE_API_URL}/profile/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          ...this._getHeaders()
-        }
-      })
+      const headers = {
+        Authorization: `Bearer ${this.authToken}`,
+        ...this._getHeaders()
+      }
+      const response = await axios.get(`${BASE_API_URL}/profile/${userId}`, this._getRequestConfig({ headers }))
       data = response?.data
     } catch (err: any) {
       data = err?.response?.data
@@ -431,13 +450,12 @@ export class RepubliKAPI {
   private _getRelations = async (userId: string, followers: boolean = false, options?: RelationQueryOptions) => {
     let data: Relation | undefined = undefined
     try {
+      const headers = {
+        Authorization: `Bearer ${this.authToken}`,
+        ...this._getHeaders()
+      }
       const params = `q=${options?.q || ""}&lastKey=${options?.lastKey || ""}&followers=${followers}&startAt=${options?.startAt || ""}`
-      const response = await axios.get(`${BASE_API_URL}/profile/${userId}/relations?${params}`, {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          ...this._getHeaders()
-        }
-      })
+      const response = await axios.get(`${BASE_API_URL}/profile/${userId}/relations?${params}`, this._getRequestConfig({ headers }))
       data = response?.data
     } catch (err: any) {
       data = err?.response?.data
@@ -450,16 +468,11 @@ export class RepubliKAPI {
     if (userId == this.userId) throw new RepublikAPIError("Cannot do to self", { target: userId, self: this.userId })
     let data: any | undefined = undefined
     try {
-      const response = await axios.post(
-        `${BASE_API_URL}/profile/${userId}/${type}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${this.authToken}`,
-            ...this._getHeaders()
-          }
-        }
-      )
+      const headers = {
+        Authorization: `Bearer ${this.authToken}`,
+        ...this._getHeaders()
+      }
+      const response = await axios.post(`${BASE_API_URL}/profile/${userId}/${type}`, {}, this._getRequestConfig({ headers }))
       data = response?.data
     } catch (err: any) {
       data = err?.response?.data
@@ -472,12 +485,11 @@ export class RepubliKAPI {
     if (userId == this.userId) throw new RepublikAPIError("Cannot do to self", { target: userId, self: this.userId })
     let data: any | undefined = undefined
     try {
-      const response = await axios.delete(`${BASE_API_URL}/profile/${userId}/followers`, {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          ...this._getHeaders()
-        }
-      })
+      const headers = {
+        Authorization: `Bearer ${this.authToken}`,
+        ...this._getHeaders()
+      }
+      const response = await axios.delete(`${BASE_API_URL}/profile/${userId}/followers`, { headers })
       data = response?.data
     } catch (err: any) {
       data = err?.response?.data
@@ -520,14 +532,13 @@ export class RepubliKAPI {
       const kind = opt?.kind || "COMMENT"
 
       try {
+        const headers = {
+          Authorization: this.streamToken,
+          ...this._getStreamHeaders(),
+          ...this._getHeaders()
+        }
         const params = `api_key=${API_KEY}&location=${location}&limit=${limit}&with_activity_data=${with_activity_data}&id_lt=${id_lt}&kind=${kind}`
-        const response = await axios.get(`${STREAM_API_URL}/enrich/feed/timeline/${this.userId}/?${params}`, {
-          headers: {
-            Authorization: this.streamToken,
-            ...this._getStreamHeaders(),
-            ...this._getHeaders()
-          }
-        })
+        const response = await axios.get(`${STREAM_API_URL}/enrich/feed/timeline/${this.userId}/?${params}`, this._getRequestConfig({ headers }))
         data = response?.data
       } catch (err: any) {
         data = err?.response?.data
@@ -566,16 +577,11 @@ export class RepubliKAPI {
     like: async (activityId: string): Promise<any> => {
       let data: any | undefined = undefined
       try {
-        const response = await axios.post(
-          `${BASE_API_URL}/activity-likes`,
-          { activityId },
-          {
-            headers: {
-              Authorization: `Bearer ${this.authToken}`,
-              ...this._getHeaders()
-            }
-          }
-        )
+        const headers = {
+          Authorization: `Bearer ${this.authToken}`,
+          ...this._getHeaders()
+        }
+        const response = await axios.post(`${BASE_API_URL}/activity-likes`, { activityId }, this._getRequestConfig({ headers }))
         data = response?.data
       } catch (err: any) {
         data = err?.response?.data
@@ -609,14 +615,12 @@ export class RepubliKAPI {
         })
 
         if (!requestOptions) return undefined
-
-        const response = await axios.delete(fullUrl, {
-          headers: {
-            Authorization: streamToken,
-            ...this._getStreamHeaders(),
-            ...this._getHeaders()
-          }
-        })
+        const headers = {
+          Authorization: streamToken,
+          ...this._getStreamHeaders(),
+          ...this._getHeaders()
+        }
+        const response = await axios.delete(fullUrl, this._getRequestConfig({ headers }))
         data = response?.data
       } catch (err: any) {
         data = err?.response?.data
@@ -631,13 +635,12 @@ export class RepubliKAPI {
           mentions: mentions,
           reactionTargetId: activityId
         }
+        const headers = {
+          Authorization: `Bearer ${this.authToken}`,
+          ...this._getHeaders()
+        }
 
-        const response = await axios.post(`${BASE_API_URL}/activity-comments/${activityId}`, requestData, {
-          headers: {
-            Authorization: `Bearer ${this.authToken}`,
-            ...this._getHeaders()
-          }
-        })
+        const response = await axios.post(`${BASE_API_URL}/activity-comments/${activityId}`, requestData, this._getRequestConfig({ headers }))
         data = response?.data
       } catch (err: any) {
         data = err?.response?.data
@@ -655,13 +658,11 @@ export class RepubliKAPI {
         })
 
         if (!requestOptions) return undefined
-
-        const response = await axios.delete(requestUrl, {
-          headers: {
-            Authorization: `Bearer ${this.authToken}`,
-            ...this._getHeaders()
-          }
-        })
+        const headers = {
+          Authorization: `Bearer ${this.authToken}`,
+          ...this._getHeaders()
+        }
+        const response = await axios.delete(requestUrl, this._getRequestConfig({ headers }))
         data = response?.data
       } catch (err: any) {
         data = err?.response?.data
@@ -703,16 +704,14 @@ export class RepubliKAPI {
         })
 
         if (!requestOptions) return undefined
-
+        const headers = {
+          Authorization: `Bearer ${this.authToken}`,
+          ...this._getHeaders()
+        }
         const response = await axios.post(
           url,
           { text: caption, mentions: [], media: preparedMedia.map((media) => ({ type: media.commonType })) },
-          {
-            headers: {
-              Authorization: `Bearer ${this.authToken}`,
-              ...this._getHeaders()
-            }
-          }
+          this._getRequestConfig({ headers })
         )
         data = response?.data
       } catch (err: any) {
@@ -754,16 +753,14 @@ export class RepubliKAPI {
         })
 
         if (!requestOptions) return undefined
-
+        const headers = {
+          Authorization: `Bearer ${this.authToken}`,
+          ...this._getHeaders()
+        }
         const response = await axios.post(
           url,
           { caption: caption, title: title, mentions: [], media: { type: preparedMedia.commonType } },
-          {
-            headers: {
-              Authorization: `Bearer ${this.authToken}`,
-              ...this._getHeaders()
-            }
-          }
+          this._getRequestConfig({ headers })
         )
         data = response?.data
       } catch (err: any) {
@@ -794,7 +791,7 @@ export class RepubliKAPI {
 
         if (!requestOptions) return undefined
 
-        const response = await axios.delete(requestUrl, {
+        await axios.delete(requestUrl, {
           headers: {
             Authorization: `Bearer ${this.authToken}`,
             ...this._getHeaders()
@@ -918,7 +915,6 @@ export class RepubliKAPI {
     streamToken = (token as Token)?.getStreamToken || undefined
     if (!streamToken) return undefined
 
-    // Set config
     const location = options?.location || "unspecified"
     const limit = options?.limit || 25
     const id_lt = options?.id_lt || ""
